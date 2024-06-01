@@ -1,11 +1,33 @@
 import { Request, Response } from 'express';
 import { StudentServices } from './student.service';
+import studentValidationSchema from './zod.studentValidation';
+// import studentValidationSchema from './joi.studentValidation';
+
 
 const createStudent = async (req: Request, res: Response) => {
   try {
+
+
     const { student: StudentData } = req.body;
 
-    const result = await StudentServices.createStudentIntoDB(StudentData);
+    // data validation using zod
+
+    const zodValidationData = studentValidationSchema.parse(StudentData);
+
+    // const {error, value} = studentValidationSchema.validate(StudentData)
+
+    // console.log({error}, {value});
+    const result = await StudentServices.createStudentIntoDB(zodValidationData);
+
+
+    // if(error){
+    // //   res.status(500).json({
+    // //     success:false,
+    // //     message: 'Something went wrong',
+    // //     error : error.details,
+    // //   })
+    // }
+
 
     res.status(200).json({
       success: true,
@@ -13,7 +35,11 @@ const createStudent = async (req: Request, res: Response) => {
       data: result,
     });
   } catch (err) {
-    console.log(err);
+    res.status(500).json({
+      success:false,
+      message: 'Something went wrong',
+      error: err
+    })
   }
 };
 
@@ -52,5 +78,6 @@ const getOneStudent = async(req: Request , res: Response)=>{
 export const StudentControllers = {
   createStudent,
   getStudents,
-  getOneStudent
+  getOneStudent,
+
 };

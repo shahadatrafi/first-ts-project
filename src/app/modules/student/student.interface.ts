@@ -1,11 +1,12 @@
 // import { Schema, model, connect } from 'mongoose';
 
+import { Model } from 'mongoose';
 
-export interface Address {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
+export interface TAddress {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
 }
 
 // export interface Course {
@@ -14,26 +15,40 @@ export interface Address {
 //     grade: string;
 // }
 
-export type BloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+export type TBloodGroup =
+  | 'A+'
+  | 'A-'
+  | 'B+'
+  | 'B-'
+  | 'AB+'
+  | 'AB-'
+  | 'O+'
+  | 'O-';
 
-export interface Contact {
-    phone: string;
-    email: string;
+export interface TContact {
+  phone: string;
+  email: string;
 }
 
-export interface Student {
-    id: string;
-    firstName: string;
-    lastName: string;
-    dateOfBirth: string;
-    address: Address;
-    contact: Contact;
-    // courses: Course[];
-    gender: "male" | "female";
-    // graduationDate: Date;
-    isActive: 'active' | 'inactive';
-    // extraCurricularActivities?: string[];
-    emergencyContact?: Contact;
-    profilePic?: string;
-    bloodGroup?: BloodGroup;
+export interface TStudent {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  address: TAddress;
+  contact: TContact;
+  // courses: Course[];
+  gender: 'male' | 'female';
+  // graduationDate: Date;
+  isActive: 'active' | 'inactive';
+  // extraCurricularActivities?: string[];
+  emergencyContact?: TContact;
+  profilePic?: string;
+  bloodGroup?: TBloodGroup;
 }
+
+export interface StudentMethods {
+  isUserExists(id: string): Promise<TStudent | null>;
+}
+
+export type StudentModel = Model<TStudent, Record<string, never>, StudentMethods>;

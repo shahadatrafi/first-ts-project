@@ -1,8 +1,14 @@
 import { Schema, model } from 'mongoose';
-import { Address, Contact, Student } from './student.interface';
 import validator from 'validator';
+import {
+  StudentMethods,
+  StudentModel,
+  TAddress,
+  TContact,
+  TStudent,
+} from './student.interface';
 
-const addressSchema = new Schema<Address>({
+const addressSchema = new Schema<TAddress>({
   street: { type: String, required: [true, 'Street is required'], trim: true },
   city: { type: String, required: [true, 'City is required'], trim: true },
   state: { type: String, required: [true, 'State is required'], trim: true },
@@ -13,7 +19,7 @@ const addressSchema = new Schema<Address>({
   },
 });
 
-const contactSchema = new Schema<Contact>({
+const contactSchema = new Schema<TContact>({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
@@ -22,15 +28,15 @@ const contactSchema = new Schema<Contact>({
   email: {
     type: String,
     required: [true, 'Email is required'],
-    validate:{
-      validator: (value: string)=> validator.isEmail(value),
-      message: '{VALUE} is not valid email'
+    validate: {
+      validator: (value: string) => validator.isEmail(value),
+      message: '{VALUE} is not valid email',
     },
     trim: true,
   },
 });
 
-const studentSchema = new Schema<Student>({
+const studentSchema = new Schema<TStudent, StudentModel, StudentMethods>({
   id: {
     type: String,
     unique: true,
@@ -101,4 +107,9 @@ const studentSchema = new Schema<Student>({
   },
 });
 
-export const StudentModel = model<Student>('Student', studentSchema);
+studentSchema.methods.isUserExists = async function (id: string) {
+  const existingUser = await Student.findOne({ id });
+  return existingUser;
+};
+
+export const Student = model<TStudent, StudentModel>('Student', studentSchema);

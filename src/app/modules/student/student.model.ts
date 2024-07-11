@@ -1,7 +1,8 @@
+import bcrypt from 'bcrypt';
 import { Schema, model } from 'mongoose';
 import validator from 'validator';
+import config from '../../config';
 import {
-  StudentMethods,
   StudentModel,
   TAddress,
   TContact,
@@ -36,80 +37,147 @@ const contactSchema = new Schema<TContact>({
   },
 });
 
-const studentSchema = new Schema<TStudent, StudentModel, StudentMethods>({
-  id: {
-    type: String,
-    unique: true,
-    required: [true, 'ID is required'],
-    trim: true,
-  },
-  firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true,
-    maxlength: [15, 'First name must be less than 15 characters'],
-    validate: {
-      validator: function (value: string) {
-        const FirstNameStr: string =
-          value.charAt(0).toUpperCase() + value.slice(1);
-        return FirstNameStr === value;
+const studentSchema = new Schema<TStudent, StudentModel>(
+  {
+    id: {
+      type: String,
+      unique: true,
+      required: [true, 'ID is required'],
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'password is required'],
+    },
+    firstName: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+      maxlength: [15, 'First name must be less than 15 characters'],
+      validate: {
+        validator: function (value: string) {
+          const FirstNameStr: string =
+            value.charAt(0).toUpperCase() + value.slice(1);
+          return FirstNameStr === value;
+        },
+        message: '{VALUE} is not capitalized',
       },
-      message: '{VALUE} is not capitalized',
+    },
+    lastName: {
+      type: String,
+      required: [true, 'Last name is required'],
+      trim: true,
+      maxlength: [15, 'Last name must be less than 15 characters'],
+    },
+    dateOfBirth: {
+      type: String,
+      required: [true, 'Date of birth is required'],
+      trim: true,
+    },
+    address: {
+      type: addressSchema,
+      required: [true, 'Address is required'],
+    },
+    contact: {
+      type: contactSchema,
+      required: [true, 'Contact information is required'],
+    },
+    gender: {
+      type: String,
+      enum: {
+        values: ['male', 'female'],
+        message: '{VALUE} is not a valid gender',
+      },
+      required: [true, 'Gender is required'],
+      trim: true,
+    },
+    isActive: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
+      trim: true,
+    },
+    emergencyContact: {
+      type: contactSchema,
+      required: [true, 'Emergency contact is required'],
+    },
+    profilePic: { type: String, trim: true },
+    bloodGroup: {
+      type: String,
+      enum: {
+        values: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+        message: '{VALUE} is not a valid blood group',
+      },
+      required: [true, 'Blood group is required'],
+      trim: true,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
-  lastName: {
-    type: String,
-    required: [true, 'Last name is required'],
-    trim: true,
-    maxlength: [15, 'Last name must be less than 15 characters'],
-  },
-  dateOfBirth: {
-    type: String,
-    required: [true, 'Date of birth is required'],
-    trim: true,
-  },
-  address: {
-    type: addressSchema,
-    required: [true, 'Address is required'],
-  },
-  contact: {
-    type: contactSchema,
-    required: [true, 'Contact information is required'],
-  },
-  gender: {
-    type: String,
-    enum: {
-      values: ['male', 'female'],
-      message: '{VALUE} is not a valid gender',
+  {
+    toJSON: {
+      virtuals: true,
     },
-    required: [true, 'Gender is required'],
-    trim: true,
   },
-  isActive: {
-    type: String,
-    enum: ['active', 'inactive'],
-    default: 'active',
-    trim: true,
-  },
-  emergencyContact: {
-    type: contactSchema,
-    required: [true, 'Emergency contact is required'],
-  },
-  profilePic: { type: String, trim: true },
-  bloodGroup: {
-    type: String,
-    enum: {
-      values: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-      message: '{VALUE} is not a valid blood group',
-    },
-    required: [true, 'Blood group is required'],
-    trim: true,
-  },
+);
+
+//Using middleware or hook
+studentSchema.pre('save', async function (next) {
+  // hasing password
+
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  const user = this;
+  user.password = await bcrypt.hash(
+    user.password,
+    Number(config.bcrypt_salt_rounds),
+  );
+
+  next();
 });
 
-studentSchema.methods.isUserExists = async function (id: string) {
+studentSchema.post('save', function (doc, next) {
+  doc.password = '';
+  next();
+});
+
+// *using query middleware
+
+studentSchema.pre('find', function (next) {
+  this.find({ isDeleted: { $ne: true } });
+
+  next();
+});
+
+studentSchema.pre('findOne', function (next) {
+  this.find({ isDeleted: { $ne: true } });
+
+  next();
+});
+
+studentSchema.pre('aggregate', function (next) {
+  this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+
+  next();
+});
+
+studentSchema.virtual('fullName').get(function () {
+  return `${this.firstName} ${this.lastName}`;
+});
+
+// creating static
+
+studentSchema.statics.isUserExists = async function (id: string) {
   const existingUser = await Student.findOne({ id });
   return existingUser;
 };
+
+//=============== creating custom instance method ==========//
+
+// studentSchema.methods.isUserExists = async function (id: string) {
+//   const existingUser = await Student.findOne({ id });
+//   return existingUser;
+// };
 
 export const Student = model<TStudent, StudentModel>('Student', studentSchema);

@@ -32,6 +32,7 @@ export interface TContact {
 
 export interface TStudent {
   id: string;
+  password: string;
   firstName: string;
   lastName: string;
   dateOfBirth: string;
@@ -45,10 +46,25 @@ export interface TStudent {
   emergencyContact?: TContact;
   profilePic?: string;
   bloodGroup?: TBloodGroup;
+  isDeleted: boolean;
 }
 
-export interface StudentMethods {
-  isUserExists(id: string): Promise<TStudent | null>;
+
+// For creating static
+
+export interface StudentModel extends Model<TStudent>{
+  isUserExists(id: string) : Promise<TStudent | null>
 }
 
-export type StudentModel = Model<TStudent, Record<string, never>, StudentMethods>;
+
+// For creating instance
+
+// export interface StudentMethods {
+//   isUserExists(id: string): Promise<TStudent | null>;
+// }
+
+// export type StudentModel = Model<
+//   TStudent,
+//   Record<string, never>,
+//   StudentMethods
+// >;
